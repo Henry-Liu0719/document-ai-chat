@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件問答系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <main class="container mx-auto p-4 lg:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+            <!-- Left Column: Upload & Control -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md border p-6 space-y-6">
+                    <h2 class="text-xl font-bold text-gray-800">1. 上傳文件</h2>
+                    <form id="uploadForm">
+                        <input type="file" id="file-input" class="hidden" accept="application/pdf">
+                        <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-600">
+                                <span class="font-medium text-blue-600">點擊上傳</span> 或拖曳檔案
+                            </p>
+                            <p id="file-info" class="text-xs text-gray-500 mt-1">請上傳 PDF 檔案</p>
+                        </div>
+                        <div class="mt-4">
+                            <label class="flex items-center space-x-2 text-sm text-gray-700">
+                                <input type="checkbox" id="generateSummary" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                <span>產生文件摘要 (需發送請求)</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="w-full mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                            上傳
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Example Docs -->
+                <div class="bg-white rounded-lg shadow-md border p-6 mt-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">範例文件</h2>
+                    <div id="example-docs" class="space-y-2">
+                         <button data-filename="勞動部-勞工請假規則.pdf" class="w-full text-left p-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">勞動部-勞工請假規則.pdf</button>
+                         <button data-filename="民法-繼承.pdf" class="w-full text-left p-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">民法-繼承.pdf</button>
+                         <button data-filename="菸害防制法-全國法規資料庫.pdf" class="w-full text-left p-2 bg-gray-100 rounded hover:bg-gray-200 text-sm">菸害防制法-全國法規資料庫.pdf</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Column: Chat -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md border flex flex-col h-[80vh]">
+                    <div class="p-4 border-b">
+                        <h2 class="text-xl font-bold text-gray-800">2. 與文件對話</h2>
+                        <p class="text-sm text-gray-500" id="chat-status">目前文件：尚未上傳</p>
+                    </div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- Welcome Message -->
+                        <div class="flex justify-start">
+                            <div class="bg-gray-200 rounded-lg p-3 max-w-lg">
+                                <p class="text-sm text-gray-800">您好！請先上傳一份 PDF 文件，然後就可以開始提問了。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t bg-gray-50">
+                        <form id="qaForm" class="flex items-center space-x-4">
+                            <input type="text" id="question" class="flex-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="請輸入問題..." disabled>
+                            <label class="flex items-center space-x-2 text-sm text-gray-700 whitespace-nowrap">
+                                <input type="checkbox" id="sendQaRequest" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                <span>發送請求</span>
+                            </label>
+                            <button type="submit" id="send-button" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                送出
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Developer Zone -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md border flex flex-col h-[80vh]">
+                     <div class="p-4 border-b">
+                        <h2 class="text-xl font-bold text-gray-800">開發者專區</h2>
+                     </div>
+                     <div id="dev-zone-content" class="flex-1 overflow-y-auto p-4 space-y-4">
+                         <div class="text-center text-gray-500 pt-16">
+                             <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                             <p class="mt-2 text-sm">此處將顯示文件解析與 Prompt 內容</p>
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    let currentFilename = '';
+
+    const uploadForm = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInfo = document.getElementById('file-info');
+    const generateSummaryCheckbox = document.getElementById('generateSummary');
+
+    const qaForm = document.getElementById('qaForm');
+    const questionInput = document.getElementById('question');
+    const sendQaRequestCheckbox = document.getElementById('sendQaRequest');
+    const sendButton = document.getElementById('send-button');
+
+    const chatContainer = document.getElementById('chat-container');
+    const chatStatus = document.getElementById('chat-status');
+    const devZoneContent = document.getElementById('dev-zone-content');
+    const exampleDocsContainer = document.getElementById('example-docs');
+
+    // --- Upload Logic ---
+
+    // Trigger file input click when drop zone is clicked
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop events
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileInfo.textContent = `已選擇檔案： ${files[0].name}`;
+        }
+    });
+    
+    // Also handle file selection via click
+    fileInput.addEventListener('change', () => {
+         if (fileInput.files.length > 0) {
+            fileInfo.textContent = `已選擇檔案： ${fileInput.files[0].name}`;
+        }
+    });
+
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!fileInput.files.length) {
+            addBotMessage('請選擇一個 PDF 檔案。');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        uploadAndProcessFile(file);
+    });
+
+    // --- Example Doc Logic ---
+    exampleDocsContainer.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') {
+            const filename = e.target.dataset.filename;
+            // We can't directly access the file from JS due to security restrictions.
+            // We will send the filename to the backend to handle it.
+            // This requires a new backend endpoint.
+            handleExampleFile(filename);
+        }
+    });
+
+
+    async function handleExampleFile(filename) {
+        addBotMessage(`正在處理範例文件： ${filename}...`, true);
+    
+        try {
+            const res = await fetch('http://127.0.0.1:5000/use_example', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    filename: filename,
+                    generate_summary: generateSummaryCheckbox.checked 
+                })
+            });
+    
+            const lastMessage = chatContainer.lastElementChild;
+            if (lastMessage && lastMessage.dataset.loading) {
+                chatContainer.removeChild(lastMessage);
+            }
+    
+            const data = await res.json();
+            if (data.filename) {
+                currentFilename = data.filename;
+                chatStatus.textContent = `目前文件：${currentFilename}`;
+                fileInfo.textContent = `${currentFilename} 已載入`;
+                questionInput.disabled = false;
+                sendButton.disabled = false;
+                addBotMessage(`文件 "${currentFilename}" 已成功處理。您可以開始提問了。`);
+            } else {
+                addBotMessage(`文件處理失敗：${data.error || '未知錯誤'}`);
+                return;
+            }
+    
+            if (data.summary) {
+                addBotMessage(`**文件摘要**:<br>${data.summary}`);
+            } else if (generateSummaryCheckbox.checked) {
+                addBotMessage('無法生成摘要，請檢查後端日誌。');
+            }
+        } catch (err) {
+            const lastMessage = chatContainer.lastElementChild;
+            if (lastMessage && lastMessage.dataset.loading) {
+                chatContainer.removeChild(lastMessage);
+            }
+            addBotMessage(`處理範例文件失敗: ${err}`);
+        }
+    }
+
+    async function uploadAndProcessFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('generate_summary', generateSummaryCheckbox.checked);
+
+        fileInfo.textContent = `正在上傳 ${file.name}...`;
+        addBotMessage(`正在處理文件： ${file.name}...`, true); // Add a temporary message with a loading indicator
+
+        try {
+            const res = await fetch('http://127.0.0.1:5000/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const lastMessage = chatContainer.lastElementChild;
+            if(lastMessage.dataset.loading) chatContainer.removeChild(lastMessage);
+
+            const data = await res.json();
+            if (data.filename) {
+                currentFilename = data.filename;
+                chatStatus.textContent = `目前文件：${currentFilename}`;
+                fileInfo.textContent = `${currentFilename} 已上傳`;
+                questionInput.disabled = false;
+                sendButton.disabled = false;
+                addBotMessage(`文件 "${currentFilename}" 已成功處理。您可以開始提問了。`);
+            } else {
+                fileInfo.textContent = `上傳失敗`;
+                addBotMessage(`文件處理失敗：${data.error || '未知錯誤'}`);
+                return;
+            }
+
+            if (data.summary) {
+                addBotMessage(`**文件摘要**:<br>${data.summary}`);
+            } else if (generateSummaryCheckbox.checked) {
+                addBotMessage('無法生成摘要，請檢查後端日誌。');
+            }
+        } catch (err) {
+            const lastMessage = chatContainer.lastElementChild;
+            if(lastMessage.dataset.loading) chatContainer.removeChild(lastMessage);
+            fileInfo.textContent = '上傳失敗';
+            addBotMessage(`上傳失敗: ${err}`);
+        }
+    }
+
+
+    // --- QA Logic ---
+    qaForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const question = questionInput.value.trim();
+        if (!currentFilename || !question) {
+            addBotMessage('請先上傳文件，並輸入問題。');
+            return;
+        }
+
+        addUserMessage(question);
+        questionInput.value = '';
+        addBotMessage('請稍候...', true);
+
+        try {
+            const res = await fetch('http://127.0.0.1:5000/qa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: currentFilename, question, send_request: sendQaRequestCheckbox.checked })
+            });
+
+            const lastMessage = chatContainer.lastElementChild;
+            if(lastMessage.dataset.loading) chatContainer.removeChild(lastMessage);
+            
+            const data = await res.json();
+            
+            updateDevZone(data);
+
+            if (data.answer) {
+                let answerPrefix = sendQaRequestCheckbox.checked ? '【ChatGPT 回答】<br>' : '';
+                addBotMessage(answerPrefix + data.answer);
+            } else {
+                addBotMessage(`錯誤：${data.error || '未知錯誤'}`);
+            }
+        } catch (err) {
+             const lastMessage = chatContainer.lastElementChild;
+            if(lastMessage.dataset.loading) chatContainer.removeChild(lastMessage);
+            addBotMessage(`提問失敗: ${err}`);
+        }
+    });
+
+    // --- UI Helper Functions ---
+    function addUserMessage(message) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'flex justify-end';
+        messageElement.innerHTML = `
+            <div class="bg-blue-500 text-white rounded-lg p-3 max-w-lg">
+                <p class="text-sm">${message}</p>
+            </div>
+        `;
+        chatContainer.appendChild(messageElement);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function addBotMessage(message, isLoading = false) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'flex justify-start';
+        
+        let content = `<p class="text-sm text-gray-800">${message.replace(/\n/g, '<br>')}</p>`;
+        
+        if (isLoading) {
+            messageElement.dataset.loading = 'true';
+            content = `
+                <div class="flex items-center space-x-2">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div>
+                    <p class="text-sm text-gray-800">${message}</p>
+                </div>`;
+        }
+        
+        messageElement.innerHTML = `
+            <div class="bg-gray-200 rounded-lg p-3 max-w-lg">
+                ${content}
+            </div>
+        `;
+        chatContainer.appendChild(messageElement);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function updateDevZone(data) {
+        let promptDisplay = data.prompt || 'N/A';
+        if (data.context) {
+            const ctxLines = data.context.split('\n');
+            let ctxShort = '';
+            if (ctxLines.length > 4) {
+                ctxShort = ctxLines.slice(0, 2).join('\n') + '\n...\n' + ctxLines.slice(-2).join('\n');
+            } else {
+                ctxShort = data.context;
+            }
+            promptDisplay = (data.prompt || '').replace(data.context, ctxShort);
+        }
+
+        devZoneContent.innerHTML = `
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold text-gray-700">文件解析內容 (TF-IDF)</h4>
+                    <pre class="bg-gray-100 p-3 rounded-md text-xs mt-1 overflow-x-auto whitespace-pre-wrap">${data.context || 'N/A'}</pre>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-700">組裝 Prompt</h4>
+                    <pre class="bg-gray-100 p-3 rounded-md text-xs mt-1 overflow-x-auto whitespace-pre-wrap">${promptDisplay}</pre>
+                </div>
+            </div>
+        `;
+    }
+});
+    </script>
+</body>
+</html> 

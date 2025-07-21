@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF QA Bot 測試</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    #result, #qa-result { white-space: pre-wrap; background: #f8f8f8; padding: 1em; margin-top: 1em; border-radius: 6px; }
+    .section { margin-bottom: 2em; }
+    #dev-details-container {
+        display: flex;
+        flex-direction: row;
+        gap: 1em;
+    }
+    .dev-column {
+        flex: 1;
+        background: #f8f8f8;
+        padding: 1em;
+        border-radius: 6px;
+        overflow-x: auto;
+    }
+    .dev-column h4 {
+        margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>PDF QA Bot 測試</h2>
+  <div class="section">
+    <h3>1. 上傳 PDF</h3>
+    <form id="uploadForm">
+      <input type="file" id="pdfFile" accept="application/pdf" required>
+      <label style="margin-left:1em;"><input type="checkbox" id="generateSummary"> 產生文件摘要 (需發送請求)</label>
+      <button type="submit">上傳</button>
+    </form>
+    <div id="file-summary" style="margin-top:0.5em;color:#555;"></div>
+  </div>
+  <div class="section">
+    <h3>2. 問答介面</h3>
+    <p><b>目前文件：</b><span id="displayFilename" style="color:#0056b3; font-weight:bold;">尚未上傳</span></p>
+    <form id="qaForm">
+      <label>問題：<input type="text" id="question" required style="width:60%"></label>
+      <label style="margin-left:1em;"><input type="checkbox" id="sendQaRequest"> 發送請求</label>
+      <button type="submit">送出</button>
+    </form>
+    <div id="qa-result"></div>
+  </div>
+  <script>
+    let currentFilename = ''; // 用於保存目前的文件名
+
+    // 上傳 PDF
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('pdfFile');
+      const generateSummaryCheckbox = document.getElementById('generateSummary');
+      if (!fileInput.files.length) {
+        alert('請選擇 PDF 檔案');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('generate_summary', generateSummaryCheckbox.checked);
+
+      document.getElementById('file-summary').innerText = '上傳中，請稍候...';
+
+      try {
+        const res = await fetch('http://127.0.0.1:5000/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.filename) {
+          currentFilename = data.filename;
+          document.getElementById('displayFilename').innerText = currentFilename;
+        } else {
+            // 處理上傳失敗的情況
+            document.getElementById('file-summary').innerText = `上傳或處理失敗：${data.error || '未知錯誤'}`;
+            return;
+        }
+
+        if (data.summary) {
+            document.getElementById('file-summary').innerText = '文件簡要說明：\n' + data.summary;
+        } else if (generateSummaryCheckbox.checked) {
+            document.getElementById('file-summary').innerText = '無法生成摘要，請檢查後端日誌。';
+        } else {
+            document.getElementById('file-summary').innerText = '文件上傳成功，未請求生成摘要。';
+        }
+      } catch (err) {
+        document.getElementById('file-summary').innerText = '上傳失敗: ' + err;
+      }
+    });
+
+    // 問答
+    document.getElementById('qaForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const question = document.getElementById('question').value.trim();
+      const sendQaRequest = document.getElementById('sendQaRequest').checked;
+      if (!currentFilename || !question) {
+        alert('請先上傳文件，並輸入問題');
+        return;
+      }
+      
+      document.getElementById('qa-result').innerText = '請稍候...';
+      try {
+        const res = await fetch('http://127.0.0.1:5000/qa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: currentFilename, question, send_request: sendQaRequest })
+        });
+        const data = await res.json();
+        
+        // 更新開發者專區
+        document.getElementById('dev-context').innerText = data.context || 'N/A';
+        // 處理 prompt 顯示：只顯示 context 前2行與後2行，中間以 ... 取代
+        let promptDisplay = data.prompt || 'N/A';
+        if (data.context) {
+          const ctxLines = data.context.split('\n');
+          let ctxShort = '';
+          if (ctxLines.length > 4) {
+            ctxShort = ctxLines.slice(0,2).join('\n') + '\n...\n' + ctxLines.slice(-2).join('\n');
+          } else {
+            ctxShort = data.context;
+          }
+          // 將 prompt 內容中的 context 部分替換為精簡版
+          promptDisplay = (data.prompt || '').replace(data.context, ctxShort);
+        }
+        document.getElementById('dev-prompt').innerText = promptDisplay;
+        document.getElementById('dev-details').style.display = 'block';
+
+        if (data.answer) {
+            if(sendQaRequest){
+                document.getElementById('qa-result').innerText = '【ChatGPT 回答】\n' + data.answer;
+            } else {
+                document.getElementById('qa-result').innerText = data.answer;
+            }
+        } else {
+          document.getElementById('qa-result').innerText = '錯誤：' + (data.error || '未知錯誤');
+          document.getElementById('dev-details').style.display = 'none';
+        }
+      } catch (err) {
+        document.getElementById('qa-result').innerText = '提問失敗: ' + err;
+        document.getElementById('dev-details').style.display = 'none';
+      }
+    });
+  </script>
+  <div class="section" id="dev-section">
+    <h3>開發者專區</h3>
+    <ul>
+      <li><b>文件解析 (TF-IDF)：</b>根據問題，從文件中找出最相關的段落。</li>
+      <li><b>組裝 Prompt：</b>組合參考資料與使用者問題，產生最終發送給模型的 Prompt。</li>
+    </ul>
+    <div id="dev-details" style="display: none;">
+        <div id="dev-details-container">
+            <div class="dev-column">
+                <h4>文件解析內容</h4>
+                <pre id="dev-context"></pre>
+            </div>
+            <div class="dev-column">
+                <h4>組裝 Prompt</h4>
+                <pre id="dev-prompt"></pre>
+            </div>
+        </div>
+    </div>
+    <p style="color: #888; font-size: 0.95em;">本區塊可協助開發者理解系統運作流程。</p>
+  </div>
+</body>
+</html> 

@@ -1,0 +1,9 @@
+Flask
+PyPDF2
+Werkzeug
+flask-cors
+scikit-learn
+requests
+google-generativeai
+openai
+python-dotenv 

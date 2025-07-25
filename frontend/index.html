@@ -176,7 +176,7 @@
         addBotMessage(`正在處理範例文件： ${filename}...`, true);
     
         try {
-            const res = await fetch('http://127.0.0.1:5000/use_example', {
+            const res = await fetch('/use_example', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -226,7 +226,7 @@
         addBotMessage(`正在處理文件： ${file.name}...`, true); // Add a temporary message with a loading indicator
 
         try {
-            const res = await fetch('http://127.0.0.1:5000/upload', {
+            const res = await fetch('/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -276,7 +276,7 @@
         addBotMessage('請稍候...', true);
 
         try {
-            const res = await fetch('http://127.0.0.1:5000/qa', {
+            const res = await fetch('/qa', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: currentFilename, question, send_request: sendQaRequestCheckbox.checked })

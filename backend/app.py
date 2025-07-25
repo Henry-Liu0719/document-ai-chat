@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import os
 import json
@@ -15,13 +15,18 @@ ALLOWED_EXTENSIONS = {'pdf'}
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10MB
 EXAMPLE_FOLDER = 'doc_examples'
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+# 根路由，提供前端頁面
+@app.route('/')
+def index():
+    return send_from_directory(app.static_folder, 'index.html')
 
 def allowed_file(filename):
     return '.' in filename and \

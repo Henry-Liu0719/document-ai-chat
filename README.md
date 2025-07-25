@@ -102,30 +102,18 @@
     pip install -r requirements.txt
     ```
 
-4.  **設定環境變數**:
-    為了讓應用程式能夠存取 OpenAI API，您必須設定 API 金鑰。在您的終端機中設定環境變數：
-    ```bash
-    # Windows (PowerShell)
-    $env:OPENAI_API_KEY="sk-..."
-
-    # macOS/Linux
-    export OPENAI_API_KEY="sk-..."
-    ```
-    **重要**: 請勿將您的 API 金鑰直接寫入程式碼中。
-
-5.  **啟動後端伺服器**:
+4.  **啟動後端伺服器**:
     ```bash
     python backend/app.py
     ```
     伺服器將會在 `http://localhost:5000` 啟動。
 
-6.  **開啟前端頁面**:
+5.  **開啟前端頁面**:
     在您的瀏覽器中直接開啟 `frontend/index.html` 檔案即可開始使用。
 
 ## 未來改進方向
 
-- **API 金鑰管理**: 移除程式碼中硬式編碼的備用 API 金鑰，強制從環境變數載入，以提高安全性。
-- **修正函數命名**: 將 `llm_utils.py` 中的 `send_to_gemini` 函數更名為 `send_to_openai` 或更通用的名稱，以避免混淆。
+
 - **支援更多文件格式**: 擴充檔案處理能力，支援如 `.docx`, `.txt` 等更多格式。
 - **前端介面優化**: 使用現代前端框架（如 Vue 或 React）重構，提升使用者體驗與互動性。
 - **非同步處理**: 對於大型文件，解析和摘要過程可能耗時較長。導入非同步任務佇列（如 Celery 或 Dramatiq）可以防止請求超時，提升系統的回應速度。 
